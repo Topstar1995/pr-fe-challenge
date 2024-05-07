@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EmployeeForm from './EmployeeForm';
 import PageHeader from '../../components/PageHeader';
 import PeopleOutlineTwoToneIcon from '@material-ui/icons/PeopleOutlineTwoTone';
@@ -21,6 +21,7 @@ import EditOutlinedIcon from '@material-ui/icons/EditOutlined';
 import CloseIcon from '@material-ui/icons/Close';
 import Notification from '../../components/Notification';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useDepartmentFilter } from '../../context/DepartmentFilterContext';
 
 const useStyles = makeStyles((theme) => ({
   pageContent: {
@@ -30,6 +31,9 @@ const useStyles = makeStyles((theme) => ({
   searchInput: {
     width: '75%',
   },
+  header: {
+    justifyContent: 'space-between'
+  },
   newButton: {
     position: 'absolute',
     right: '10px',
@@ -37,6 +41,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const headCells = [
+  { id: 'selected', label: 'Select' },
   { id: 'fullName', label: 'Employee Name' },
   { id: 'email', label: 'Email Address (Personal)' },
   { id: 'mobile', label: 'Mobile Number' },
@@ -48,6 +53,8 @@ export default function Employees() {
   const classes = useStyles();
   const [recordForEdit, setRecordForEdit] = useState(null);
   const [records, setRecords] = useState(employeeService.getAllEmployees());
+  const [selectedIds, setSelectedIds] = useState([]);
+  const { departmentFilter } = useDepartmentFilter();
   const [filterFn, setFilterFn] = useState({
     fn: (items) => {
       return items;
@@ -71,6 +78,16 @@ export default function Employees() {
     TblPagination,
     recordsAfterPagingAndSorting,
   } = useTable(records, headCells, filterFn);
+
+  useEffect(() => {
+    let employees = employeeService.getAllEmployees();
+    if (employees && employees.length) {
+      setRecords(departmentFilter ?
+        employees.filter((employee) => employee.departmentId === departmentFilter)
+        : employees
+      );
+    }
+  }, [departmentFilter]);
 
   const handleSearch = (e) => {
     let target = e.target;
