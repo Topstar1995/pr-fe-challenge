@@ -16,6 +16,7 @@ import * as employeeService from '../../services/employeeService';
 import Controls from '../../components/controls/Controls';
 import { Search } from '@material-ui/icons';
 import AddIcon from '@material-ui/icons/Add';
+import DeleteIcon from '@material-ui/icons/Delete';
 import Popup from '../../components/Popup';
 import EditOutlinedIcon from '@material-ui/icons/EditOutlined';
 import CloseIcon from '@material-ui/icons/Close';
@@ -34,9 +35,12 @@ const useStyles = makeStyles((theme) => ({
   header: {
     justifyContent: 'space-between'
   },
-  newButton: {
-    position: 'absolute',
-    right: '10px',
+  buttonContainer: {
+    display: 'flex',
+    gap: theme.spacing(2),
+  },
+  button: {
+    height: 'fit-content'
   },
 }));
 
@@ -55,11 +59,21 @@ export default function Employees() {
   const [records, setRecords] = useState(employeeService.getAllEmployees());
   const [selectedIds, setSelectedIds] = useState([]);
   const { departmentFilter } = useDepartmentFilter();
+
   const [filterFn, setFilterFn] = useState({
     fn: (items) => {
       return items;
     },
   });
+  useEffect(() => {
+    let employees = employeeService.getAllEmployees();
+    if (employees && employees.length) {
+      setRecords(departmentFilter ?
+        employees.filter((employee) => employee.departmentId === departmentFilter)
+        : employees
+      );
+    }
+  }, [departmentFilter]);
   const [openPopup, setOpenPopup] = useState(false);
   const [notify, setNotify] = useState({
     isOpen: false,
@@ -79,16 +93,6 @@ export default function Employees() {
     recordsAfterPagingAndSorting,
   } = useTable(records, headCells, filterFn);
 
-  useEffect(() => {
-    let employees = employeeService.getAllEmployees();
-    if (employees && employees.length) {
-      setRecords(departmentFilter ?
-        employees.filter((employee) => employee.departmentId === departmentFilter)
-        : employees
-      );
-    }
-  }, [departmentFilter]);
-
   const handleSearch = (e) => {
     let target = e.target;
     setFilterFn({
@@ -100,6 +104,26 @@ export default function Employees() {
           );
       },
     });
+  }
+
+  const handleCheckboxSelect = (id) => {
+    const selectedIndex = selectedIds.indexOf(id);
+    let newSelection = [];
+
+    if (selectedIndex === -1) {
+      newSelection = newSelection.concat(selectedIds, id);
+    } else if (selectedIndex === 0) {
+      newSelection = newSelection.concat(selectedIds.slice(1));
+    } else if (selectedIndex === selectedIds.length - 1) {
+      newSelection = newSelection.concat(selectedIds.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelection = newSelection.concat(
+        selectedIds.slice(0, selectedIndex),
+        selectedIds.slice(selectedIndex + 1)
+      );
+    }
+
+    setSelectedIds(newSelection);
   };
 
   const addOrEdit = (employee, resetForm) => {
@@ -126,7 +150,17 @@ export default function Employees() {
       ...confirmDialog,
       isOpen: false,
     });
-    employeeService.deleteEmployee(id);
+
+    if (selectedIds.length > 0) {
+      selectedIds.forEach((id) => {
+        employeeService.deleteEmployee(id);
+      });
+
+      setSelectedIds([]);
+    } else {
+      employeeService.deleteEmployee(id);
+    }
+
     setRecords(employeeService.getAllEmployees());
     setNotify({
       isOpen: true,
@@ -143,7 +177,7 @@ export default function Employees() {
         icon={<PeopleOutlineTwoToneIcon fontSize='large' />}
       />
       <Paper className={classes.pageContent}>
-        <Toolbar>
+        <Toolbar className={classes.header}>
           <Controls.Input
             label='Search Employees'
             className={classes.searchInput}
@@ -156,22 +190,52 @@ export default function Employees() {
             }}
             onChange={handleSearch}
           />
-          <Controls.Button
-            text='Add New'
-            variant='outlined'
-            startIcon={<AddIcon />}
-            className={classes.newButton}
-            onClick={() => {
-              setOpenPopup(true);
-              setRecordForEdit(null);
-            }}
-          />
+          <div className={classes.buttonContainer}>
+            <Controls.Button
+              text='Add New'
+              variant='outlined'
+              startIcon={<AddIcon />}
+              className={classes.button}
+              onClick={() => {
+                setOpenPopup(true);
+                setRecordForEdit(null);
+              }}
+            />
+            {selectedIds.length > 0 && (
+              <Controls.Button
+                text='Delete'
+                variant='outlined'
+                startIcon={<DeleteIcon />}
+                className={classes.button}
+                onClick={() => {
+                  setConfirmDialog({
+                    isOpen: true,
+                    title: 'Are you sure you want to delete the selected records?',
+                    subTitle: "You can't undo this operation",
+                    onConfirm: () => {
+                      onDelete('');
+                    },
+                  });
+                }}
+              />
+            )}
+          </div>
         </Toolbar>
         <TblContainer>
           <TblHead />
           <TableBody>
             {recordsAfterPagingAndSorting().map((item) => (
               <TableRow key={item.id}>
+                <TableCell>
+                  <Controls.Checkbox
+                    name='Selected'
+                    label=''
+                    value={selectedIds.includes(item.id)}
+                    onChange={() => handleCheckboxSelect(item.id)}
+                  >
+                    Select
+                  </Controls.Checkbox>
+                </TableCell>
                 <TableCell>{item.fullName}</TableCell>
                 <TableCell>{item.email}</TableCell>
                 <TableCell>{item.mobile}</TableCell>

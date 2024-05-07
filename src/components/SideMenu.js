@@ -53,7 +53,7 @@ export default function SideMenu() {
         >
           <MenuItem value=''>None</MenuItem>
           {employeeService.getDepartmentCollection()?.map((item) => (
-            <MenuItem key={item.id} value={item.id}>
+            <MenuItem key={item.departmentId} value={item.departmentId}>
               {item.title}
             </MenuItem>
           ))}
