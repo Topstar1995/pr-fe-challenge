@@ -79,7 +79,7 @@ export default function Employees() {
         if (target.value === '') return items;
         else
           return items.filter((x) =>
-            x.fullName.toLowerCase().includes(target.value)
+            x.fullName.toLowerCase().includes(target.value.toLowerCase())
           );
       },
     });
