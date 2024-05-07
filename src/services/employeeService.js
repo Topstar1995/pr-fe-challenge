@@ -13,6 +13,7 @@ export const getDepartmentCollection = () => [
 export function insertEmployee(data) {
   let employees = getAllEmployees();
   data["id"] = generateEmployeeId();
+  data["department"] = getDepartmentCollection().find((item) => item.departmentId === parseInt(data.departmentId))?.title;
   employees.push(data);
   localStorage.setItem(KEYS.employees, JSON.stringify(employees));
 }
@@ -20,6 +21,7 @@ export function insertEmployee(data) {
 export function updateEmployee(data) {
   let employees = getAllEmployees();
   let recordIndex = employees.findIndex((x) => x.id === data.id);
+  data["department"] = getDepartmentCollection().find((item) => item.departmentId === parseInt(data.departmentId))?.title;
   employees[recordIndex] = { ...data };
   localStorage.setItem(KEYS.employees, JSON.stringify(employees));
 }
